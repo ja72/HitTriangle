@@ -60,7 +60,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Geometry\Line.cs" />
     <Compile Include="Geometry\LinearAlgebra.cs" />
-    <Compile Include="Geometry\Pairs.cs" />
+    <Compile Include="Geometry\Contact.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Geometry\Side.cs" />
@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="readme.md" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="UI\MainForm.resx">

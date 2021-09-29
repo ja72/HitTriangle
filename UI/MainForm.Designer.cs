@@ -57,7 +57,7 @@
             this.Controls.Add(this.statusStrip1);
             this.DoubleBuffered = true;
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "[LMB] Inside triangle to move, [RMB] to measure distance, [MMB] to rotate.";
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);

@@ -108,26 +108,26 @@ namespace JA.UI
                     Invalidate();
                 }
             }
+            sb.Append("Scene");
             canvas.DrawTriangle(e.Graphics, Color.Blue, triangle);
             canvas.DrawTriangle(e.Graphics, Color.DarkGreen, other);
-            sb.Append($"Triangle: {triangle:g4}");
             Vector2 point;
             if (canvas.Buttons == MouseButtons.Right)
             {
-                var n = Pairs.Nearest(triangle, other);
-                float d = Vector2.Distance(n.A, n.B);
+                var n = triangle.GetClosestPoints(other);
+                float d = n.Distance;
 
-                sb.Append($", Pair: {n.A:g4}-{n.B:g4}, Distance: {d:g4}");
+                sb.Append($", Pair: {n.Source:g4}-{n.Target:g4}, Distance: {d:g4}");
 
                 canvas.pen.DashStyle = DashStyle.Dash;
-                canvas.DrawLine(e.Graphics, Color.Black, n.B, n.A, false, true);
+                canvas.DrawLine(e.Graphics, Color.Black, n.Target, n.Source, false, true);
                 canvas.pen.DashStyle = DashStyle.Solid;
-                canvas.DrawLabel(e.Graphics, Color.LightBlue, $"{d:g4}", n.B+0.2f*n.A, 0, 0, n.B.X-n.A.X >=0 ? ContentAlignment.MiddleLeft : ContentAlignment.MiddleRight);
-                canvas.FillPoint(e.Graphics, Color.Black, n.A, 4f);
-                canvas.FillPoint(e.Graphics, Color.Black, n.B, 4f);
+                canvas.DrawLabel(e.Graphics, Color.LightBlue, $"{d:g4}", n.Target+0.2f*n.Source, 0, 0, n.Target.X-n.Source.X >=0 ? ContentAlignment.MiddleLeft : ContentAlignment.MiddleRight);
+                canvas.FillPoint(e.Graphics, Color.Black, n.Source, 4f);
+                canvas.FillPoint(e.Graphics, Color.Black, n.Target, 4f);
             }
             point = canvas.MouseMove;
-            var hit = triangle.Contains(point);
+            var hit = triangle.Contains(point) || other.Contains(point);
             if (hit)
             {
                 sb.Append($", Inside");

@@ -7,7 +7,8 @@ namespace JA.Geometry
     {
         public static readonly float PI = (float)Math.PI;
         public static readonly float Deg = PI/180;
-
+        public static float Sqrt(float a) => (float)Math.Sqrt(a);
+        public static float Hypot(float a, float b) => (float)Math.Sqrt(a*a+b*b);
         public static float Dot(Vector2 a, Vector2 b)
             => Vector2.Dot(a, b);
         public static float Cross(Vector2 a, Vector2 b)
