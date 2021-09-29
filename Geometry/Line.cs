@@ -9,37 +9,40 @@ namespace JA.Geometry
 {
     public readonly struct Line : IFormattable
     {
-        public Line(float a, float b, float c) : this()
+        public Line(Vector2 v, float s) : this()
         {
-            A = a;
-            B = b;
-            C = c;
-
-            Tangent = Vector2.Normalize(
-                new Vector2(b, -a));
-            Normal = -Vector2.Normalize(
-                new Vector2(a, b));
+            Vector = v;
+            Scalar = s;
+            Tangent = Vector2.Normalize(new Vector2(v.Y, -v.X));
+            Normal = Vector2.Normalize(v);
         }
 
-        public float A { get; }
-        public float B { get; }
-        public float C { get; }
-
+        public Vector2 Vector { get; }
+        public float Scalar { get; }
         public Vector2 Tangent { get; }
         public Vector2 Normal { get; }
 
         public Vector2 PointAlong(float distance)
         {
-            float absq = A * A + B * B;
-            float t = distance * LinearAlgebra.Sqrt(absq);
-            return new Vector2(
-                -(A * C + B * t) / absq,
-                (A * t - B * C) / absq);
+            float v_sq = Vector.LengthSquared();
+            float t = distance * LinearAlgebra.Sqrt(v_sq);
+            return (-Vector * Scalar + LinearAlgebra.Cross(t, Vector)) / v_sq;
+        }
+        /// <summary>
+        /// Projects a point onto the line.
+        /// </summary>
+        /// <param name="line">The line.</param>
+        /// <param name="point">The point.</param>
+        public Vector2 Project(Vector2 point)
+        {
+            float t = LinearAlgebra.Cross(Vector, point);
+            float d = Vector.LengthSquared();
+            return (-Vector * Scalar + LinearAlgebra.Cross(t, Vector)) / d;
         }
 
         public float DistanceTo(Vector2 point)
         {
-            return (A * point.X + B * point.Y + C) / LinearAlgebra.Sqrt(A * A + B * B);
+            return (Vector2.Dot(Vector, point) + Scalar) / Vector.Length();
         }
 
         public bool Contains(Vector2 point)
@@ -50,7 +53,7 @@ namespace JA.Geometry
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
-            => $"Line[{A.ToString(format, formatProvider)}x+{B.ToString(format, formatProvider)}y+{C.ToString(format, formatProvider)}=0]";
+            => $"Line[{Vector.X.ToString(format, formatProvider)}x+{Vector.Y.ToString(format, formatProvider)}y+{Scalar.ToString(format, formatProvider)}=0]";
         public string ToString(string format)
             => ToString(format, null);
         public override string ToString()

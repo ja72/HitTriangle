@@ -14,7 +14,6 @@ namespace JA.Geometry
             Tangent = Vector2.Normalize(B - A);                
             Normal = Vector2.Normalize(
                     new Vector2(-(B.Y - A.Y), (B.X - A.X)));
-            OnLine = LinearAlgebra.Join(a, b);
         }
 
         public Vector2 A { get; }
@@ -22,7 +21,6 @@ namespace JA.Geometry
         [Browsable(false)] public Vector2 Tangent { get; }
         [Browsable(false)] public Vector2 Normal { get; }
         [Browsable(false)] public float Length { get; }
-        [Browsable(false)] public Line OnLine { get; }
 
         public Side Offset(Vector2 delta)
             => new Side(A + delta, B + delta);
@@ -68,7 +66,7 @@ namespace JA.Geometry
             float d_B = Vector2.Distance(B, other);
 
             // Project point to line of side
-            Vector2 hit = LinearAlgebra.Project(OnLine, other);
+            Vector2 hit = LinearAlgebra.Join(A,B).Project(other);
             float d_hit = Contains(hit) ? Vector2.Distance(hit, other) : float.PositiveInfinity;
 
             // Find the closest point

@@ -11,6 +11,10 @@ namespace JA.Geometry
         public static float Hypot(float a, float b) => (float)Math.Sqrt(a*a+b*b);
         public static float Dot(Vector2 a, Vector2 b)
             => Vector2.Dot(a, b);
+        public static Vector2 Cross(Vector2 v, float s)
+            => new Vector2(v.Y * s, -v.X * s);
+        public static Vector2 Cross(float s, Vector2 v)
+            => new Vector2(-v.Y * s, v.X * s);
         public static float Cross(Vector2 a, Vector2 b)
             => a.X * b.Y - a.Y * b.X;
         public static Vector2 Rotate(Vector2 vector, float angle)
@@ -43,21 +47,21 @@ namespace JA.Geometry
         /// </returns>
         public static Line Join(Vector2 A, Vector2 B)
         {
-            return new Line(A.Y - B.Y, B.X - A.X, Cross(A, B));
+            return new Line(
+                Cross(A, 1) + Cross(1, B),
+                Cross(A, B));
         }
 
         /// <summary>
         /// Finds the point where two lines meet.
         /// </summary>
-        /// <param name="lineA">The first line.</param>
-        /// <param name="lineB">The second line.</param>
+        /// <param name="A">The first line.</param>
+        /// <param name="B">The second line.</param>
         /// <returns>A point</returns>
-        public static Vector2 Meet(Line lineA, Line lineB)
+        public static Vector2 Meet(Line A, Line B)
         {
-            float d = lineA.A * lineB.B - lineA.B * lineB.A;
-            return new Vector2(
-                (lineA.B * lineB.C - lineA.C * lineB.B) / d,
-                (lineA.C * lineB.A - lineA.A * lineB.C) / d);
+            return (Cross(A.Vector, B.Scalar) + Cross(A.Scalar, B.Vector)) 
+                / Cross(A.Vector, B.Vector);
         }
 
         /// <summary>
@@ -67,11 +71,9 @@ namespace JA.Geometry
         /// <param name="point">The point.</param>
         public static Vector2 Project(Line line, Vector2 point)
         {
-            float t = line.A * point.Y - line.B * point.X;
-            float d = line.A * line.A + line.B * line.B;
-            return new Vector2(
-                (-line.A * line.C - line.B * t) / d,
-                (-line.B * line.C + line.A * t) / d);
+            float t = Cross(line.Vector, point);
+            float d = line.Vector.LengthSquared();
+            return (-line.Vector * line.Scalar + Cross(t, line.Vector)) / d;
         }
     }
 }
