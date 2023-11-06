@@ -16,29 +16,29 @@ namespace JA.UI
 
         public Canvas(Rectangle target, float size)
             : this(target, size, Vector2.Zero) { }
-        public Canvas(Rectangle target, float modelSize, Vector2 worldCenter)
+        public Canvas(Rectangle target, float modelSize, Point2 worldCenter)
         {
             Target = target;
             ModelSize = modelSize;
             WorldCenter = worldCenter;
         }
-        public Vector2 MouseDown { get; set; }
-        public Vector2 MouseMove { get; set; }
+        public Point2 MouseDown { get; set; }
+        public Point2 MouseMove { get; set; }
         public MouseButtons Buttons { get; set; }
 
         public Rectangle Target { get; }
         public float ModelSize { get; }
-        public Vector2 WorldCenter { get; }
+        public Point2 WorldCenter { get; }
         public int TargetSize { get => Math.Min(Target.Width, Target.Height); }
-        public PointF GetPixel(Vector2 point)
+        public PointF GetPixel(Point2 point)
         {
-            var pt = TargetSize / ModelSize * (point - WorldCenter);
+            Vector2 pt = TargetSize / ModelSize * (point - WorldCenter);
 
             return new PointF(
                 Target.X + Target.Width / 2 + pt.X,
                 Target.Y + Target.Height / 2 - pt.Y);
         }
-        public PointF[] GetPixels(Vector2[] points)
+        public PointF[] GetPixels(Point2[] points)
         {
             PointF[] pixels = new PointF[points.Length];
             for (int i = 0; i < points.Length; i++)
@@ -47,12 +47,12 @@ namespace JA.UI
             }
             return pixels;
         }
-        public Vector2 GetPoint(PointF pixel)
+        public Point2 GetPoint(PointF pixel)
         {
-            float px = pixel.X - Target.X - Target.Width / 2;
-            float py = Target.Y + Target.Height / 2 - pixel.Y;
-
-            return WorldCenter + (ModelSize / TargetSize) * new Vector2(px, py);
+            var pt = new Vector2(
+                pixel.X - Target.X - Target.Width / 2,
+                Target.Y + Target.Height / 2 - pixel.Y);
+            return WorldCenter + (ModelSize / TargetSize) * pt;
         }
 
         public void DoMouseDown(Point mouse, MouseButtons buttons)
@@ -67,7 +67,7 @@ namespace JA.UI
             MouseMove = GetPoint(mouse);
         }
 
-        public void DrawLine(Graphics g, Color color, Vector2 start, Vector2 end, bool startArrow = false, bool endArrow = false, float arrowSize = 8f)
+        public void DrawLine(Graphics g, Color color, Point2 start, Point2 end, bool startArrow = false, bool endArrow = false, float arrowSize = 8f)
         {
             var px1 = GetPixel(start);
             var px2 = GetPixel(end);
@@ -85,7 +85,7 @@ namespace JA.UI
             pen.StartCap = LineCap.NoAnchor;
         }
 
-        public void DrawLabel(Graphics g, Color color, string label, Vector2 point, int Xoffset = 0, int Yoffset = 0, ContentAlignment alignment = ContentAlignment.MiddleLeft)
+        public void DrawLabel(Graphics g, Color color, string label, Point2 point, int Xoffset = 0, int Yoffset = 0, ContentAlignment alignment = ContentAlignment.MiddleLeft)
         {
             var pt = GetPixel(point);
             pt.X += Xoffset;
@@ -177,37 +177,37 @@ namespace JA.UI
                 pointSize);
         }
 
-        public void DrawLines(Graphics g, Color color, params Vector2[] points)
+        public void DrawLines(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
             pen.Color = color;
             g.DrawLines(pen, pxs);
         }
-        public void DrawCurve(Graphics g, Color color, params Vector2[] points)
+        public void DrawCurve(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
             pen.Color = color;
             g.DrawCurve(pen, pxs);
         }
-        public void DrawPolygon(Graphics g, Color color, params Vector2[] points)
+        public void DrawPolygon(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
             pen.Color = color;
             g.DrawPolygon(pen, pxs);
         }
-        public void DrawClosedCurve(Graphics g, Color color, params Vector2[] points)
+        public void DrawClosedCurve(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
             pen.Color = color;
             g.DrawClosedCurve(pen, pxs);
         }
-        public void FillPolygon(Graphics g, Color color, params Vector2[] points)
+        public void FillPolygon(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
             brush.Color = color;
             g.FillPolygon(brush, pxs);
         }
-        public void FillClosedCurve(Graphics g, Color color, params Vector2[] points)
+        public void FillClosedCurve(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
             brush.Color = color;
@@ -238,6 +238,7 @@ namespace JA.UI
                 {
                     pen.Dispose();
                     brush.Dispose();
+                    font.Dispose();
                 }
 
                 disposedValue = true;

@@ -6,27 +6,27 @@ namespace JA.Geometry
 {
     public readonly struct Triangle : IFormattable
     {
-        public Triangle(Vector2 a, Vector2 b, Vector2 c) : this()
+        public Triangle(Point2 a, Point2 b, Point2 c) : this()
         {
             A = a;
             B = b;
             C = c;
 
             Area = LinearAlgebra.Area(a, b, c);
-            Centroid = (A + B + C) / 3;
+            Centroid = LinearAlgebra.Centroid(a, b, c);
             AreaMoment = LinearAlgebra.AreaMoment(a, b, c);
         }
 
-        public Vector2 A { get; }
-        public Vector2 B { get; }
-        public Vector2 C { get; }
+        public Point2 A { get; }
+        public Point2 B { get; }
+        public Point2 C { get; }
 
         [Browsable(false)] public Side AB { get => new Side(A, B); }
         [Browsable(false)] public Side BC { get => new Side(B, C); }
         [Browsable(false)] public Side CA { get => new Side(C, A); }
 
         [Browsable(false)] public float Area { get; }
-        [Browsable(false)] public Vector2 Centroid { get; }
+        [Browsable(false)] public Point2 Centroid { get; }
         [Browsable(false)] public float AreaMoment { get; }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace JA.Geometry
         /// </summary>
         /// <param name="point">The point.</param>
         /// <returns>The triplet of weights such that <code>P=w_A*A + w_B*B + w_C*C</code></returns>
-        public (float w_A, float w_B, float w_C) GetBaryCoords(Vector2 point)
+        public (float w_A, float w_B, float w_C) GetBaryCoords(Point2 point)
         {
             float d = LinearAlgebra.Area(A, B, C);
 
@@ -47,7 +47,7 @@ namespace JA.Geometry
         /// Determines a point is inside this triangle.
         /// </summary>
         /// <param name="point">The point.</param>
-        public bool Contains(Vector2 point)
+        public bool Contains(Point2 point)
         {
             (float w_A, float w_B, float w_C) = GetBaryCoords(point);
 
@@ -58,7 +58,7 @@ namespace JA.Geometry
 
         public Triangle Offset(Vector2 delta)
             => new Triangle(A + delta, B + delta, C + delta);
-        public Triangle Rotate(Vector2 pivot, float angle) 
+        public Triangle Rotate(Point2 pivot, float angle) 
             => new Triangle(
                 LinearAlgebra.RotateAbout(A, pivot, angle),
                 LinearAlgebra.RotateAbout(B, pivot, angle),
@@ -69,7 +69,7 @@ namespace JA.Geometry
         public static Triangle operator -(Triangle triangle, Vector2 delta)
             => triangle.Offset(-delta);
 
-        public Contact GetClosestPoints(Vector2 other)
+        public Contact GetClosestPoints(Point2 other)
         {
             var n_A = new Contact(A, other);
             var n_B = new Contact(B, other);
@@ -157,10 +157,9 @@ namespace JA.Geometry
             throw new ArgumentException("Invalid inputs");
         }
 
-        public float DistanceTo(Vector2 other) => GetClosestPoints(other).Distance;
+        public float DistanceTo(Point2 other) => GetClosestPoints(other).Distance;
         public float DistanceTo(Side other) => GetClosestPoints(other).Distance;
         public float DistanceTo(Triangle other) => GetClosestPoints(other).Distance;
-
 
         public string ToString(string format, IFormatProvider formatProvider)
             => $"Triangle{{{A.ToString(format, formatProvider)},{B.ToString(format, formatProvider)},{C.ToString(format, formatProvider)}}}";

@@ -11,6 +11,10 @@ namespace JA.Geometry
         public static float Hypot(float a, float b) => (float)Math.Sqrt(a*a+b*b);
         public static float Dot(Vector2 a, Vector2 b)
             => Vector2.Dot(a, b);
+        public static float Dot(Line2 a, Point2 b)
+            => Vector2.Dot(a.Vector, b.Vector) + a.Scalar+ b.Scalar;
+        public static float Dot(Point2 a, Line2 b)
+            => Vector2.Dot(a.Vector, b.Vector) + a.Scalar + b.Scalar;
         public static Vector2 Cross(Vector2 v, float s)
             => new Vector2(v.Y * s, -v.X * s);
         public static Vector2 Cross(float s, Vector2 v)
@@ -24,8 +28,10 @@ namespace JA.Geometry
                 c * vector.X - s * vector.Y,
                 s * vector.X + c * vector.Y);
         }
-        public static Vector2 RotateAbout(Vector2 vector, Vector2 pivot, float angle)
-            => pivot + Rotate(vector - pivot, angle);
+        public static Vector2 RotateAbout(Vector2 vector, Point2 pivot, float angle)
+            => pivot.Position + Rotate(vector - pivot.Position, angle);
+        public static Point2 RotateAbout(Point2 point, Point2 pivot, float angle)
+            => pivot + Rotate(point - pivot, angle);
 
         public static float Area(Vector2 a, Vector2 b, Vector2 c)
             // Area = 1/2*(B-A)×(C-A) = 1/2*(B×C+C×A+A×B)
@@ -36,6 +42,7 @@ namespace JA.Geometry
             => Area(a, b, c) / 18 * (
                 Dot(a, a) + Dot(b, b) + Dot(c, c) 
                 -Dot(a, b) - Dot(b, c) - Dot(c, a));
+
         /// <summary>
         /// Joints two points to form an infinite line.
         /// </summary>
@@ -45,10 +52,10 @@ namespace JA.Geometry
         /// The <code>(a,b,c)</code> coordinates of the line
         /// such that <code>a*x+b*y+c=0</code> is the equation of the line.
         /// </returns>
-        public static Line Join(Vector2 A, Vector2 B)
+        public static Line2 Join(Point2 A, Point2 B)
         {
-            return new Line(
-                Cross(A, 1) + Cross(1, B),
+            return new Line2(
+                Cross(A, B.Scalar) + Cross(A.Scalar, B),
                 Cross(A, B));
         }
 
@@ -58,22 +65,12 @@ namespace JA.Geometry
         /// <param name="A">The first line.</param>
         /// <param name="B">The second line.</param>
         /// <returns>A point</returns>
-        public static Vector2 Meet(Line A, Line B)
+        public static Point2 Meet(Line2 A, Line2 B)
         {
-            return (Cross(A.Vector, B.Scalar) + Cross(A.Scalar, B.Vector)) 
-                / Cross(A.Vector, B.Vector);
+            return new Point2(
+                Cross(A.Vector, B.Scalar) + Cross(A.Scalar, B.Vector), 
+                Cross(A.Vector, B.Vector));
         }
 
-        /// <summary>
-        /// Projects a point onto a line.
-        /// </summary>
-        /// <param name="line">The line.</param>
-        /// <param name="point">The point.</param>
-        public static Vector2 Project(Line line, Vector2 point)
-        {
-            float t = Cross(line.Vector, point);
-            float d = line.Vector.LengthSquared();
-            return (-line.Vector * line.Scalar + Cross(t, line.Vector)) / d;
-        }
     }
 }

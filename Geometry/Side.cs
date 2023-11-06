@@ -6,18 +6,17 @@ namespace JA.Geometry
 {
     public readonly struct Side : IFormattable
     {
-        public Side(Vector2 a, Vector2 b) : this()
+        public Side(Point2 a, Point2 b) : this()
         {
             A = a;
             B = b;
-            Length = Vector2.Distance(A, B);
+            Length = A.DistanceTo(B);
             Tangent = Vector2.Normalize(B - A);                
-            Normal = Vector2.Normalize(
-                    new Vector2(-(B.Y - A.Y), (B.X - A.X)));
+            Normal = new Vector2(-Tangent.Y, Tangent.X);
         }
 
-        public Vector2 A { get; }
-        public Vector2 B { get; }
+        public Point2 A { get; }
+        public Point2 B { get; }
         [Browsable(false)] public Vector2 Tangent { get; }
         [Browsable(false)] public Vector2 Normal { get; }
         [Browsable(false)] public float Length { get; }
@@ -35,7 +34,7 @@ namespace JA.Geometry
         public static Side operator -(Side side, Vector2 delta)
             => side.Offset(-delta);
 
-        public bool Contains(Vector2 point)
+        public bool Contains(Point2 point)
         {
             float d_sign = Vector2.Dot(Normal, point - A);
             
@@ -49,7 +48,7 @@ namespace JA.Geometry
             return false;
         }
 
-        public (float w_A, float w_B) GetBaryCoords(Vector2 point)
+        public (float w_A, float w_B) GetBaryCoords(Point2 point)
         {
             float d_side = Vector2.Dot(Normal, point - A);
             point -= d_side * Normal;
@@ -60,14 +59,14 @@ namespace JA.Geometry
             return (w_A, w_B);
         }
 
-        public Contact GetClosestPoints(Vector2 other)
+        public Contact GetClosestPoints(Point2 other)
         {
-            float d_A = Vector2.Distance(A, other);
-            float d_B = Vector2.Distance(B, other);
+            float d_A = A.DistanceTo(other);
+            float d_B = B.DistanceTo(other);
 
             // Project point to line of side
-            Vector2 hit = LinearAlgebra.Join(A,B).Project(other);
-            float d_hit = Contains(hit) ? Vector2.Distance(hit, other) : float.PositiveInfinity;
+            var hit = LinearAlgebra.Join(A,B).Project(other);
+            float d_hit = Contains(hit) ? hit.DistanceTo(other) : float.PositiveInfinity;
 
             // Find the closest point
             float d_min = Math.Min(d_hit, Math.Min(d_A, d_B));
@@ -84,12 +83,14 @@ namespace JA.Geometry
             var n_BA = other.GetClosestPoints(A);
             var n_BB = other.GetClosestPoints(B);
 
-            float d_AA = Vector2.Distance(n_AA.Source, n_AA.Target);
-            float d_AB = Vector2.Distance(n_AB.Source, n_AB.Target);
-            float d_BA = Vector2.Distance(n_BA.Source, n_BA.Target);
-            float d_BB = Vector2.Distance(n_BB.Source, n_BB.Target);
+            float d_AA = n_AA.Source.DistanceTo(n_AA.Target);
+            float d_AB = n_AB.Source.DistanceTo(n_AB.Target);
+            float d_BA = n_BA.Source.DistanceTo(n_BA.Target);
+            float d_BB = n_BB.Source.DistanceTo(n_BB.Target);
 
-            float d_min = Math.Min(Math.Min(d_AA, d_AB), Math.Min(d_BA, d_BB));
+            float d_min = Math.Min(
+                Math.Min(d_AA, d_AB), 
+                Math.Min(d_BA, d_BB));
 
             if (d_min == d_AA) return n_AA;
             if (d_min == d_AB) return n_AB;
@@ -100,7 +101,7 @@ namespace JA.Geometry
         }
 
 
-        public float DistanceTo(Vector2 other) => GetClosestPoints(other).Distance;
+        public float DistanceTo(Point2 other) => GetClosestPoints(other).Distance;
         public float DistanceTo(Side other) => GetClosestPoints(other).Distance;
 
         public string ToString(string format, IFormatProvider formatProvider) 
