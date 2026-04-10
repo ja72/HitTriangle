@@ -5,16 +5,16 @@ namespace JA.Geometry
 {
     public readonly struct Contact : IFormattable
     {
-        public Contact(Vector2 source, Vector2 target) : this()
+        public Contact(Point2 source, Point2 target) : this()
         {
             Source = source;
             Target = target;
-            Distance = Vector2.Distance(Source, Target);
+            Distance = Source.DistanceTo(Target);
             Direction = (target - source) / Distance;
         }
 
-        public Vector2 Source { get; }
-        public Vector2 Target { get; }
+        public Point2 Source { get; }
+        public Point2 Target { get; }
         public Vector2 Direction { get; }
         public float Distance { get; }
 

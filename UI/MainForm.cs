@@ -122,7 +122,7 @@ namespace JA.UI
                 canvas.pen.DashStyle = DashStyle.Dash;
                 canvas.DrawLine(e.Graphics, Color.Black, n.Target, n.Source, false, true);
                 canvas.pen.DashStyle = DashStyle.Solid;
-                canvas.DrawLabel(e.Graphics, Color.LightBlue, $"{d:g4}", n.Target+0.2f*n.Source, 0, 0, n.Target.X-n.Source.X >=0 ? ContentAlignment.MiddleLeft : ContentAlignment.MiddleRight);
+                canvas.DrawLabel(e.Graphics, Color.LightBlue, $"{d:g4}", n.Target.Position+0.2f*n.Source.Position, 0, 0, n.Target.Position.X-n.Source.Position.X >=0 ? ContentAlignment.MiddleLeft : ContentAlignment.MiddleRight);
                 canvas.FillPoint(e.Graphics, Color.Black, n.Source, 4f);
                 canvas.FillPoint(e.Graphics, Color.Black, n.Target, 4f);
             }

@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Geometry\Point2.cs" />
     <Compile Include="UI\Canvas.cs" />
     <Compile Include="UI\MainForm.cs">
       <SubType>Form</SubType>
@@ -58,7 +59,7 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Geometry\Line.cs" />
+    <Compile Include="Geometry\Line2.cs" />
     <Compile Include="Geometry\LinearAlgebra.cs" />
     <Compile Include="Geometry\Contact.cs" />
     <Compile Include="Program.cs" />
