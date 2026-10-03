@@ -6,6 +6,8 @@ using System.Collections.Generic;
 
 namespace JA.UI
 {
+    using System.Linq;
+
     using JA.Geometry;
 
     public class GraphicsEventArgs : EventArgs
@@ -73,9 +75,10 @@ namespace JA.UI
         public float ModelSize { get; set; }
         public Point2 WorldCenter { get; set; }
         public int TargetSize { get => Math.Min(TargetRect.Width, TargetRect.Height); }
+        public float Scale { get => TargetSize / ModelSize; }
         public PointF GetPixel(Point2 point)
         {
-            Vector2 pt = TargetSize / ModelSize * Point2.Span(point, WorldCenter);
+            Vector2 pt = Scale * Point2.Span(point, WorldCenter);
 
             return new PointF(
                 TargetRect.X + TargetRect.Width / 2 + pt.X,
@@ -95,7 +98,7 @@ namespace JA.UI
             var pt = new Vector2(
                 pixel.X - TargetRect.X - TargetRect.Width / 2,
                 TargetRect.Y + TargetRect.Height / 2 - pixel.Y);
-            return WorldCenter + ( ModelSize / TargetSize ) * pt;
+            return WorldCenter + pt / Scale;
         }
 
         public void DoMouseDown(Point mouse, MouseButtons buttons)
@@ -112,6 +115,8 @@ namespace JA.UI
         public IReadOnlyList<IVisualObject> VisualObjects { get => visualObjects; }
         public void AddTriangle(Color color, Triangle2 triangle)
             => visualObjects.Add(new VisualTriangle(color, triangle));
+        public void AddCircle(Color color, Circle2 circle)
+            => visualObjects.Add(new VisualCircle(color, circle));
 
         public void DrawObjects(Graphics g)
         {
@@ -193,6 +198,13 @@ namespace JA.UI
             DrawPoint(g, color, triangle.B);
             DrawPoint(g, color, triangle.C);
         }
+        public void DrawCircle(Graphics g, Color color, Circle2 circle)
+        {
+            var cen = GetPixel(circle.Center);
+            var rad = Scale * circle.Radius;
+
+            Gdi.DrawCircle(g, color, cen, rad);
+        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
@@ -216,60 +228,47 @@ namespace JA.UI
         {
             Dispose(true);
         }
+
+        #endregion
+
+        #region Events
+        public void HandleMouse()
+        {
+            foreach (var item in VisualObjects.Reverse())
+            {
+                if (item.Geometry.Contains(MouseDown))
+                {
+                    switch (Buttons)
+                    {
+                        case MouseButtons.Left:
+                        {
+                            var delta = Point2.Span(MouseMove, MouseDown);
+                            MouseDown = MouseMove;
+                            item.UpdatePosition(delta);
+                            Target.Invalidate();
+                            break;
+                        }
+                        case MouseButtons.Right:
+                        {
+                            break;
+                        }
+                        case MouseButtons.Middle:
+                        {
+                            Point2 pivot = MouseDown;
+                            float angle = 0.2f;
+                            item.UpdateRotation(pivot, angle);
+                            Target.Invalidate();
+                            break;
+                        }
+                    }
+                }
+
+            }
+            
+        }
+
+
         #endregion
     }
 
-    public interface IVisualObject
-    {
-        IGeometry Geometry { get; }
-        void Draw(Graphics g, Canvas canvas);
-    }
-
-    public class VisualTriangle : IVisualObject
-    {
-        public VisualTriangle(Color color, Triangle2 triangle)
-        {
-            this.Color = color;
-            this.Triangle = triangle;
-        }
-        public Color Color { get; set; }
-        public Triangle2 Triangle { get; set; }
-        public IGeometry Geometry => Triangle;
-        public void Draw(Graphics g, Canvas canvas)
-        {
-            Point2 a = Triangle.A, b = Triangle.B, c = Triangle.C;
-            Side2 ab = Triangle.AB, bc = Triangle.BC, ca = Triangle.CA;
-            canvas.DrawPolygon(g, Color, a, b, c);
-            canvas.DrawPoints(g, Color, [a, b, c], 4f);
-        }
-
-        public void UpdatePosition(Canvas canvas)
-        {            
-            if (Triangle.Contains(canvas.MouseDown))
-            {
-                switch (canvas.Buttons)
-                {
-                    case MouseButtons.Left:
-                    {
-                        var delta = Point2.Span(canvas.MouseMove, canvas.MouseDown);
-                        canvas.MouseDown = canvas.MouseMove;
-                        Triangle += delta;
-                        canvas.Target.Invalidate();
-                        break;
-                    }
-                    case MouseButtons.Right:
-                    {
-                        break;
-                    }
-                    case MouseButtons.Middle:
-                    {
-                        Triangle = Triangle.Rotate(canvas.MouseDown, 0.2f * LinearAlgebra.Deg);
-                        canvas.Target.Invalidate();
-                        break;
-                    }
-                }
-            }
-
-        }
-    }
 }

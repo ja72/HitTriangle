@@ -76,14 +76,14 @@ namespace JA.Geometry
         public static Triangle2 operator -(Triangle2 triangle, Vector2 delta)
             => triangle.Offset(-delta);
 
-        public Contact GetClosestPoint(Point2 other)
+        public Contact GetClosestPoint(Point2 target)
         {
-            var n_A = new Contact(A, other);
-            var n_B = new Contact(B, other);
-            var n_C = new Contact(C, other);
-            var n_AB = AB.GetClosestPoint(other);
-            var n_BC = BC.GetClosestPoint(other);
-            var n_CA = CA.GetClosestPoint(other);
+            var n_A = new Contact(A, target);
+            var n_B = new Contact(B, target);
+            var n_C = new Contact(C, target);
+            var n_AB = AB.GetClosestPoint(target);
+            var n_BC = BC.GetClosestPoint(target);
+            var n_CA = CA.GetClosestPoint(target);
 
             float d_A = n_A.Distance;
             float d_B = n_B.Distance;
@@ -105,14 +105,17 @@ namespace JA.Geometry
 
             throw new ArgumentException("Invalid inputs");
         }
-
-        public Contact GetClosestPoint(Side2 other)
+        public Contact GetClosestPoint(Circle2 target)
         {
-            var n_A = GetClosestPoint(other.A);
-            var n_B = GetClosestPoint(other.B);
-            var n_OA = other.GetClosestPoint(A);
-            var n_OB = other.GetClosestPoint(B);
-            var n_OC = other.GetClosestPoint(C);
+            return target.GetClosestPoint(this).Flip();
+        }
+        public Contact GetClosestPoint(Side2 target)
+        {
+            var n_A = GetClosestPoint(target.A);
+            var n_B = GetClosestPoint(target.B);
+            var n_OA = target.GetClosestPoint(A);
+            var n_OB = target.GetClosestPoint(B);
+            var n_OC = target.GetClosestPoint(C);
 
             float d_A = n_A.Distance;
             float d_B = n_B.Distance;

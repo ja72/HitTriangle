@@ -30,13 +30,35 @@ namespace JA.Geometry
         #endregion
 
         #region Geometry
+        public Circle2 Offset(Vector2 delta)
+            => new Circle2(Center + delta, Radius);
+        public Circle2 Rotate(Point2 pivot, float angle) 
+            => new Circle2(
+                LinearAlgebra.RotateAbout(Center, pivot, angle),
+                Radius);
+
+        public static Circle2 operator +(Circle2 circle, Vector2 delta)
+            => circle.Offset(delta);
+        public static Circle2 operator -(Circle2 circle, Vector2 delta)
+            => circle.Offset(-delta);
+
         public bool Contains(Point2 point) => Center.DistanceTo(point) <= Radius;
         public float DistanceTo(Point2 other) => throw new NotImplementedException();
-        public Contact GetClosestPoint(Point2 other)
+        public Contact GetClosestPoint(Point2 target)
         {
-            var direction = Vector2.Normalize( Point2.Span(Center, other) );
-            var point = Center + Radius * direction;
-            return new Contact(point, other);
+            var direction = Vector2.Normalize( Point2.Span(Center, target) );
+            var point = Center - Radius * direction;
+            return new Contact(point, target);
+        }
+        public Contact GetClosestPoint(Circle2 target)
+        {
+            var contact = target.GetClosestPoint(Center);
+            return GetClosestPoint(contact.Source);
+        }
+        public Contact GetClosestPoint(Triangle2 target)
+        {
+            var contact = target.GetClosestPoint(Center);
+            return GetClosestPoint(contact.Source);
         }
 
         #endregion

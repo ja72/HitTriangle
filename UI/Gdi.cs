@@ -182,6 +182,58 @@ namespace JA.UI
             g.DrawString(label, Gdi.Type, Gdi.Fill, box, sf);
         }
 
+        public static void DrawCircle(Graphics g, Color color, PointF center, float radius)
+        {
+            StrokeColor = color;
+            var rect = new RectangleF(center.X - radius, center.Y - radius, radius * 2f, radius * 2f);
+            g.DrawEllipse(Stroke, rect);
+            g.DrawLine(Stroke, center.X, center.Y, center.X+radius, center.Y);
+        }
+        public static void DrawCircle(Graphics g, Color color, PointF center, float radius, float angleDeg)
+        {
+            var state = g.Save();
+            g.TranslateTransform(center.X, center.Y);
+            g.RotateTransform(-angleDeg);
+            DrawCircle(g, color, PointF.Empty, radius);
+            g.Restore(state);
+        }
+        public static void FillCircle(Graphics g, Color color, PointF center, float radius)
+        {
+            FillColor = color;
+            var rect = new RectangleF(center.X - radius, center.Y - radius, radius * 2f, radius * 2f);
+            g.FillEllipse(Fill, rect);
+        }
+        public static void DrawEllipse(Graphics g, Color color, PointF center, float majorRadius, float minorRadius)
+        {
+            StrokeColor = color;
+            var rect = new RectangleF(center.X - majorRadius, center.Y - minorRadius, majorRadius * 2f, minorRadius * 2f);
+            g.DrawEllipse(Stroke, rect);
+            g.DrawLine(Stroke, center.X, center.Y, center.X+majorRadius, center.Y);
+            //g.DrawLine(Stroke, center.X, center.Y, center.X, center.Y+minorRadius);
+        }
+        public static void DrawEllipse(Graphics g, Color color, PointF center, float majorRadius, float minorRadius, float angleDeg)
+        {
+            var state = g.Save();
+            g.TranslateTransform(center.X, center.Y);
+            g.RotateTransform(-angleDeg);
+            DrawEllipse(g, color, PointF.Empty, majorRadius, minorRadius);
+            g.Restore(state);
+        }
+        public static void FillEllipse(Graphics g, Color color, PointF center, float majorRadius, float minorRadius)
+        {
+            FillColor = color;
+            var rect = new RectangleF(center.X - majorRadius, center.Y - minorRadius, majorRadius * 2f, minorRadius * 2f);
+            g.FillEllipse(Fill, rect);
+        }
+        public static void FillEllipse(Graphics g, Color color, PointF center, float majorRadius, float minorRadius, float angleDeg)
+        {
+            var state = g.Save();
+            g.TranslateTransform(center.X, center.Y);
+            g.RotateTransform(-angleDeg);
+            FillEllipse(g, color, PointF.Empty, majorRadius, minorRadius);
+            g.Restore(state);
+        }
+
         #endregion
     }
 }

@@ -29,7 +29,9 @@ namespace JA.Geometry
             }
             Position = vector / scalar;
         }
-
+        public static Point2 Cartesian(float x, float y) => new Point2(Geometry.Cartesian(x, y), 1);
+        public static Point2 Polar(float r, float θ) => new Point2(Geometry.Polar(r, θ), 1);
+        public static Point2 Along(float x, float y) => new Point2(Geometry.Cartesian(x, y), 0);
         public static Point2 Zeros { get; } = new Point2(Vector2.Zero, 0);
         public static Point2 Origin { get; } = new Point2(Vector2.Zero, 1);
         public static Point2 InfX { get; } = new Point2(Vector2.UnitX, 0);
@@ -82,7 +84,7 @@ namespace JA.Geometry
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Point2 Offset(Point2 A, Vector2 delta) => new Point2(A.Vector + A.Scalar * delta, A.Scalar);
         public bool Contains(Point2 point) => Span(this, point).Length() < Geometry.Tolerance;
-        public Contact GetClosestPoint(Point2 other) => new Contact(this, other);
+        public Contact GetClosestPoint(Point2 other) => new Contact(this, other);        
         #endregion
 
     }

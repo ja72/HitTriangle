@@ -23,28 +23,46 @@ namespace JA.UI
             InitializeComponent();
 
             float b = 5, h = 8;
-            float x = -1, y = -3;
+            float x = -4, y = -3;
             var triangle = new Triangle2(
-                new Vector2(x + 0, y + 0),
-                new Vector2(x + b, y + 0),
-                new Vector2(x + 0, y + h));
+                Point2.Cartesian(x + 0, y + 0),
+                Point2.Cartesian(x + b, y + 0),
+                Point2.Cartesian(x + 0, y + h));
             var other = new Triangle2(
-                new Vector2(8, 0),
-                new Vector2(9, 2),
-                new Vector2(8, 2));
+                Point2.Cartesian(8, 0),
+                Point2.Cartesian(9, 2),
+                Point2.Cartesian(8, 2));
+            var circ = new Circle2(
+                Point2.Cartesian(3, 7),
+                2);
 
             canvas = new Canvas(this, 20);
             canvas.AddTriangle(Color.Blue, triangle);
             canvas.AddTriangle(Color.DarkCyan, other);
+            canvas.AddCircle(Color.DarkGoldenrod, circ);
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-
             this.Paint += RenderFormHandler;
-        }        
+        }
+
+        private void DrawClosestDistance(Graphics g, Color color, string format, IVisualObject source, IVisualObject target, out Contact contact)
+        {
+            contact = Geometry.GetClosestPoint(source.Geometry, target.Geometry);
+            float d = contact.Distance;
+
+            Gdi.Stroke.DashStyle = DashStyle.Solid;
+            canvas.DrawLine(g, color, contact.Target, contact.Source, false, true);
+            Gdi.Stroke.DashStyle = DashStyle.Solid;
+            string label = d.ToString(format);
+            Vector2 mid_leader = (contact.Target +contact.Source).Position; 
+            canvas.DrawLabel(g, color, label, mid_leader, alignment: ContentAlignment.MiddleCenter);
+            canvas.FillPoint(g, Color.Black, contact.Source, 4f);
+            canvas.FillPoint(g, Color.Black, contact.Target, 4f);
+        }
 
         private void RenderFormHandler(object sender, PaintEventArgs e)
         {
@@ -53,30 +71,31 @@ namespace JA.UI
             e.Graphics.InterpolationMode = InterpolationMode.High;
             e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
+            // handle left, right and middle clicks
+            // - left click/drag is pan
+            // - middle click is rotate
+            canvas.HandleMouse();
+
+            sb.Append("Scene");
+            // draw all objects in scene
+            canvas.DrawObjects(e.Graphics);
+
+            // draw closest distance arrrow
             VisualTriangle triangle = canvas.VisualObjects[0] as VisualTriangle;
             VisualTriangle other  = canvas.VisualObjects[1] as VisualTriangle;
+            VisualCircle circle = canvas.VisualObjects[2] as VisualCircle;
 
-            triangle.UpdatePosition(canvas);
-            other.UpdatePosition(canvas);
-            
-            sb.Append("Scene");
-            canvas.DrawObjects(e.Graphics);
-            var n = triangle.Triangle.GetClosestPoint(other.Triangle);
-            float d = n.Distance;
+            DrawClosestDistance(e.Graphics, Color.DarkGray, "g4", triangle, other, out _);
 
-            sb.Append($", Pair: {n.Source:g4}-{n.Target:g4}, Distance: {d:g4}");
+            //float d = contact.Distance;
+            //sb.Append($", Pair: {contact.Source:g4}-{contact.Target:g4}, Distance: {d:g4}");
 
-            Gdi.Stroke.DashStyle = DashStyle.Solid;
-            canvas.DrawLine(e.Graphics, Color.DarkGray, n.Target, n.Source, false, true);
-            Gdi.Stroke.DashStyle = DashStyle.Solid;
-            string label = $"{d:g4}";
-            Vector2 mid_leader = (n.Target +n.Source).Position; //0.5f*n.Target.Position+0.5f*n.Source.Position;
-            canvas.DrawLabel(e.Graphics, Color.DarkGray, label, mid_leader, alignment:  ContentAlignment.MiddleCenter);
-            canvas.FillPoint(e.Graphics, Color.Black, n.Source, 4f);
-            canvas.FillPoint(e.Graphics, Color.Black, n.Target, 4f);
+            DrawClosestDistance(e.Graphics, Color.DarkGoldenrod, "g4", other, circle, out _);
 
+            DrawClosestDistance(e.Graphics, Color.DarkOliveGreen, "g4", circle, triangle, out _);
+
+            // draw point at mouse position (filled/open)
             Point2 point = canvas.MouseMove;
-
             if (canvas.VisualObjects.Any(vo => vo.Geometry.Contains(point)))
             {
                 sb.Append($", Inside");
@@ -88,7 +107,7 @@ namespace JA.UI
                 canvas.DrawPoint(e.Graphics, Color.Red, point, 6f);
             }
 
-            //var hit = triangle.Triangle.Contains(point) || other.Triangle.Contains(point);
+            //var hit = source.Circle.Contains(point) || target.Circle.Contains(point);
             //if (hit)
             //{
             //    sb.Append($", Inside");
