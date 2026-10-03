@@ -1,42 +1,85 @@
 ﻿using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Numerics;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace JA.UI
 {
     using JA.Geometry;
 
+    public class GraphicsEventArgs : EventArgs
+    {
+        public GraphicsEventArgs(Graphics graphics)
+        {
+            Graphics= graphics??throw new ArgumentNullException(nameof(graphics));
+        }
+
+        public Graphics Graphics { get; }
+    }
+
+    public delegate void CanvasDrawHandler(object sender, GraphicsEventArgs eventArgs);
+
     public class Canvas : IDisposable
     {
-        public readonly Pen pen = new Pen(Color.Black, 0);
-        public readonly SolidBrush brush = new SolidBrush(Color.Black);
-        public readonly Font font = new Font(SystemFonts.CaptionFont.FontFamily, 8f);
-
-        public Canvas(Rectangle target, float size)
-            : this(target, size, Vector2.Zero) { }
-        public Canvas(Rectangle target, float modelSize, Point2 worldCenter)
+        readonly Control control;
+        readonly List<IVisualObject> visualObjects;
+        public Canvas(Control target, float size)
+            : this(target, size, Point2.Origin) { }
+        public Canvas(Control target, float modelSize, Point2 worldCenter)
         {
             Target = target;
             ModelSize = modelSize;
             WorldCenter = worldCenter;
+            visualObjects = new List<IVisualObject>();
+
+            Form onForm = target.FindForm();
+            onForm.Load += (s, ev) =>
+            {
+                SetupHandlers(onForm);
+            };
+        }
+        void SetupHandlers(Form onForm)
+        {
+            Target.Resize += (obj, ev) =>
+            {
+                Target.Refresh();
+            };
+
+            Target.KeyDown += (obj, ev) =>
+            {
+                if (ev.KeyData == Keys.Escape)
+                {
+                    onForm.Close();
+                }
+            };
+
+            Target.MouseMove += (obj, ev) =>
+            {
+                DoMouseMove(ev.Location, ev.Button);
+                Target.Refresh();
+            };
+            Target.MouseDown += (obj, ev) =>
+            {
+                DoMouseDown(ev.Location, ev.Button);
+                Target.Refresh();
+            };
         }
         public Point2 MouseDown { get; set; }
         public Point2 MouseMove { get; set; }
         public MouseButtons Buttons { get; set; }
-
-        public Rectangle Target { get; }
-        public float ModelSize { get; }
-        public Point2 WorldCenter { get; }
-        public int TargetSize { get => Math.Min(Target.Width, Target.Height); }
+        public Control Target { get; }
+        public Rectangle TargetRect { get => Target.ClientRectangle; }
+        public float ModelSize { get; set; }
+        public Point2 WorldCenter { get; set; }
+        public int TargetSize { get => Math.Min(TargetRect.Width, TargetRect.Height); }
         public PointF GetPixel(Point2 point)
         {
-            Vector2 pt = TargetSize / ModelSize * (point - WorldCenter);
+            Vector2 pt = TargetSize / ModelSize * Point2.Span(point, WorldCenter);
 
             return new PointF(
-                Target.X + Target.Width / 2 + pt.X,
-                Target.Y + Target.Height / 2 - pt.Y);
+                TargetRect.X + TargetRect.Width / 2 + pt.X,
+                TargetRect.Y + TargetRect.Height / 2 - pt.Y);
         }
         public PointF[] GetPixels(Point2[] points)
         {
@@ -50,9 +93,9 @@ namespace JA.UI
         public Point2 GetPoint(PointF pixel)
         {
             var pt = new Vector2(
-                pixel.X - Target.X - Target.Width / 2,
-                Target.Y + Target.Height / 2 - pixel.Y);
-            return WorldCenter + (ModelSize / TargetSize) * pt;
+                pixel.X - TargetRect.X - TargetRect.Width / 2,
+                TargetRect.Y + TargetRect.Height / 2 - pixel.Y);
+            return WorldCenter + ( ModelSize / TargetSize ) * pt;
         }
 
         public void DoMouseDown(Point mouse, MouseButtons buttons)
@@ -66,162 +109,86 @@ namespace JA.UI
             Buttons = buttons;
             MouseMove = GetPoint(mouse);
         }
+        public IReadOnlyList<IVisualObject> VisualObjects { get => visualObjects; }
+        public void AddTriangle(Color color, Triangle2 triangle)
+            => visualObjects.Add(new VisualTriangle(color, triangle));
 
+        public void DrawObjects(Graphics g)
+        {
+            foreach (var item in visualObjects)
+            {
+                item.Draw(g, this);
+            }
+        }
+        public void DrawPoint(Graphics g, Color color, Point2 point, float pointSize = 4f)
+        {
+            var pixel = GetPixel(point);
+            Gdi.DrawPoint(g, color, pixel, pointSize);
+        }
+        public void FillPoint(Graphics g, Color color, Point2 point, float pointSize = 4f)
+        {
+            var pixel = GetPixel(point);
+            Gdi.FillPoint(g, color, pixel, pointSize);
+        }
+        public void DrawPoints(Graphics g, Color color, Point2[] points, float pointSize = 4f)
+        {
+            var pixel = GetPixels(points);
+            Gdi.DrawPoints(g, color, pixel, pointSize);
+        }
+        public void FillPoints(Graphics g, Color color, Point2[] point, float pointSize = 4f)
+        {
+            var pixels = GetPixels(point);
+            Gdi.FillPoints(g, color, pixels, pointSize);
+        }
         public void DrawLine(Graphics g, Color color, Point2 start, Point2 end, bool startArrow = false, bool endArrow = false, float arrowSize = 8f)
         {
             var px1 = GetPixel(start);
             var px2 = GetPixel(end);
-            if (startArrow)
-            {
-                pen.CustomStartCap = new AdjustableArrowCap(arrowSize / 2, arrowSize);
-            }
-            if (endArrow)
-            {
-                pen.CustomEndCap = new AdjustableArrowCap(arrowSize / 2, arrowSize);
-            }
-            pen.Color = color;
-            g.DrawLine(pen, px1, px2);
-            pen.EndCap = LineCap.NoAnchor;
-            pen.StartCap = LineCap.NoAnchor;
+            Gdi.DrawLine(g, color, px1, px2, startArrow, endArrow, arrowSize);
         }
-
-        public void DrawLabel(Graphics g, Color color, string label, Point2 point, int Xoffset = 0, int Yoffset = 0, ContentAlignment alignment = ContentAlignment.MiddleLeft)
-        {
-            var pt = GetPixel(point);
-            pt.X += Xoffset;
-            pt.Y += Yoffset;
-            var sz = g.MeasureString(label, font);
-            sz.Height += 1;
-            sz.Width += 3;
-            var sf = new StringFormat()
-            {
-                Trimming = StringTrimming.EllipsisWord,
-                FormatFlags = StringFormatFlags.NoClip | StringFormatFlags.NoWrap,
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center,
-            };
-
-            switch (alignment)
-            {
-                case ContentAlignment.TopLeft:
-                    pt.X -= 0;
-                    pt.Y -= 0;
-                    break;
-                case ContentAlignment.TopCenter:
-                    pt.X -= sz.Width / 2;
-                    pt.Y -= 0;
-                    break;
-                case ContentAlignment.TopRight:
-                    pt.X -= sz.Width;
-                    pt.Y -= 0;
-                    break;
-                case ContentAlignment.MiddleLeft:
-                    pt.X -= 0;
-                    pt.Y -= sz.Height / 2;
-                    break;
-                case ContentAlignment.MiddleCenter:
-                    pt.Y -= sz.Height / 2;
-                    pt.X -= sz.Width / 2;
-                    break;
-                case ContentAlignment.MiddleRight:
-                    pt.Y -= sz.Height / 2;
-                    pt.X -= sz.Width;
-                    break;
-                case ContentAlignment.BottomLeft:
-                    pt.X -= 0;
-                    pt.Y -= sz.Height;
-                    break;
-                case ContentAlignment.BottomCenter:
-                    pt.Y -= sz.Height;
-                    pt.X -= sz.Width / 2;
-                    break;
-                case ContentAlignment.BottomRight:
-                    pt.Y -= sz.Height;
-                    pt.X -= sz.Width;
-                    break;
-                default:
-                    throw new NotSupportedException($"Unknown alignment {alignment}");
-            }
-            if (color.GetBrightness() >= 0.77f)
-            {
-                brush.Color = Color.FromArgb(22, 32, 32);
-            }
-            else
-            {
-                brush.Color = Color.FromArgb(224, 234, 224);
-            }
-            var box = new RectangleF(pt, sz);
-            g.FillRectangle(brush, box);
-            brush.Color = color;
-            g.DrawString(label, font, brush, box, sf);
-        }
-
-        public void DrawPoint(Graphics g, Color color, Vector2 point, float pointSize = 4f)
-        {
-            var pixel = GetPixel(point);
-            pen.Color = color;
-            g.DrawEllipse(pen,
-                pixel.X - pointSize / 2,
-                pixel.Y - pointSize / 2,
-                pointSize,
-                pointSize);
-        }
-        public void FillPoint(Graphics g, Color color, Vector2 point, float pointSize = 4f)
-        {
-            var pixel = GetPixel(point);
-            brush.Color = color;
-            g.FillEllipse(brush,
-                pixel.X - pointSize / 2,
-                pixel.Y - pointSize / 2,
-                pointSize,
-                pointSize);
-        }
-
         public void DrawLines(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
-            pen.Color = color;
-            g.DrawLines(pen, pxs);
+            Gdi.DrawLines(g, color, pxs);
         }
         public void DrawCurve(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
-            pen.Color = color;
-            g.DrawCurve(pen, pxs);
+            Gdi.DrawCurve(g, color, pxs);
         }
         public void DrawPolygon(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
-            pen.Color = color;
-            g.DrawPolygon(pen, pxs);
-        }
-        public void DrawClosedCurve(Graphics g, Color color, params Point2[] points)
-        {
-            var pxs = GetPixels(points);
-            pen.Color = color;
-            g.DrawClosedCurve(pen, pxs);
+            Gdi.DrawPolygon(g, color, pxs);
         }
         public void FillPolygon(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
-            brush.Color = color;
-            g.FillPolygon(brush, pxs);
+            Gdi.FillPolygon(g, color, pxs);
+        }
+        public void DrawClosedCurve(Graphics g, Color color, params Point2[] points)
+        {
+            var pxs = GetPixels(points);
+            Gdi.StrokeColor = color;
+            g.DrawClosedCurve(Gdi.Stroke, pxs);
         }
         public void FillClosedCurve(Graphics g, Color color, params Point2[] points)
         {
             var pxs = GetPixels(points);
-            brush.Color = color;
-            g.FillClosedCurve(brush, pxs);
+            Gdi.FillColor = color;
+            g.FillClosedCurve(Gdi.Fill, pxs);
         }
-        public void DrawLine(Graphics g, Color color, Side side)
+        public void DrawLabel(Graphics g, Color color, string label, Point2 point, int Xoffset = 0, int Yoffset = 0, ContentAlignment alignment = ContentAlignment.MiddleLeft)
         {
-            DrawLine(g, color, side.A, side.B);
+            var pt = GetPixel(point);
+            Gdi.DrawLabel(g, color, label, pt, Xoffset, Yoffset, alignment);
         }
-        public void DrawTriangle(Graphics g, Color color, Triangle triangle)
+        public void DrawTriangle(Graphics g, Color color, Triangle2 triangle)
         {
-            DrawLine(g, color, triangle.AB);
-            DrawLine(g, color, triangle.BC);
-            DrawLine(g, color, triangle.CA);
+            DrawLine(g, color, triangle.A, triangle.B);
+            DrawLine(g, color, triangle.B, triangle.C);
+            DrawLine(g, color, triangle.C, triangle.A);
+
             DrawPoint(g, color, triangle.A);
             DrawPoint(g, color, triangle.B);
             DrawPoint(g, color, triangle.C);
@@ -236,9 +203,7 @@ namespace JA.UI
             {
                 if (disposing)
                 {
-                    pen.Dispose();
-                    brush.Dispose();
-                    font.Dispose();
+                    // Dispose GDI objects
                 }
 
                 disposedValue = true;
@@ -252,5 +217,59 @@ namespace JA.UI
             Dispose(true);
         }
         #endregion
+    }
+
+    public interface IVisualObject
+    {
+        IGeometry Geometry { get; }
+        void Draw(Graphics g, Canvas canvas);
+    }
+
+    public class VisualTriangle : IVisualObject
+    {
+        public VisualTriangle(Color color, Triangle2 triangle)
+        {
+            this.Color = color;
+            this.Triangle = triangle;
+        }
+        public Color Color { get; set; }
+        public Triangle2 Triangle { get; set; }
+        public IGeometry Geometry => Triangle;
+        public void Draw(Graphics g, Canvas canvas)
+        {
+            Point2 a = Triangle.A, b = Triangle.B, c = Triangle.C;
+            Side2 ab = Triangle.AB, bc = Triangle.BC, ca = Triangle.CA;
+            canvas.DrawPolygon(g, Color, a, b, c);
+            canvas.DrawPoints(g, Color, [a, b, c], 4f);
+        }
+
+        public void UpdatePosition(Canvas canvas)
+        {            
+            if (Triangle.Contains(canvas.MouseDown))
+            {
+                switch (canvas.Buttons)
+                {
+                    case MouseButtons.Left:
+                    {
+                        var delta = Point2.Span(canvas.MouseMove, canvas.MouseDown);
+                        canvas.MouseDown = canvas.MouseMove;
+                        Triangle += delta;
+                        canvas.Target.Invalidate();
+                        break;
+                    }
+                    case MouseButtons.Right:
+                    {
+                        break;
+                    }
+                    case MouseButtons.Middle:
+                    {
+                        Triangle = Triangle.Rotate(canvas.MouseDown, 0.2f * LinearAlgebra.Deg);
+                        canvas.Target.Invalidate();
+                        break;
+                    }
+                }
+            }
+
+        }
     }
 }

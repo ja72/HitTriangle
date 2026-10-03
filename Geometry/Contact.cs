@@ -10,7 +10,7 @@ namespace JA.Geometry
             Source = source;
             Target = target;
             Distance = Source.DistanceTo(Target);
-            Direction = (target - source) / Distance;
+            Direction = Point2.Span(target, source) / Distance;
         }
 
         public Point2 Source { get; }
@@ -20,12 +20,14 @@ namespace JA.Geometry
 
         public Contact Flip() => new Contact(Target, Source);
 
-        public string ToString(string format, IFormatProvider formatProvider) 
+        #region Formatting
+        public string ToString(string format, IFormatProvider formatProvider)
             => $"Contact(Source={Source.ToString(format, formatProvider)}, Target={Target.ToString(format, formatProvider)})";
         public string ToString(string format)
             => ToString(format, null);
         public override string ToString()
-            => ToString("g");
+            => ToString("g"); 
+        #endregion
 
     }
 
